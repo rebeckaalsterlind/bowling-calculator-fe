@@ -1,3 +1,5 @@
+import { Players, Rounds } from "@/types/score-board";
+
 export default class CalucalorHelpers {
   static getRounds = () => {
     const rounds = [];
@@ -23,4 +25,82 @@ export default class CalucalorHelpers {
     }
     return rounds;
   };
+
+  static getCalcHdcp(playersGame: Rounds[]) {
+    let playedRounds = 0;
+    let totalScore = 0;
+
+    for (const round of playersGame) {
+      if (round?.roundScore) {
+        totalScore = round.roundScore;
+        playedRounds++;
+      }
+    }
+    return totalScore / playedRounds;
+  }
+
+  static getActivePlayer(players: Players[], activePlayerIndex: number) {
+    return players.find((player) => player.id === activePlayerIndex);
+  }
+
+  static getActiveRound(
+    players: Players[],
+    activeRoundId: number,
+    activePlayer: number
+  ) {
+    const selectPlayer = players.find((player) => player.id === activePlayer);
+    return selectPlayer?.game.find((round) => round.id === activeRoundId);
+  }
+
+  static getPlayerGame(players: Players[], activePlayerIndex: number) {
+    const foundPlayer = players.find(
+      (player) => player.id === activePlayerIndex
+    );
+    return foundPlayer?.game || [];
+  }
+
+  static getCheckNumberStrikes(
+    players: Players[],
+    activePlayerIndex: number,
+    numberOfStrikes: number
+  ) {
+    const playerRounds = CalucalorHelpers.getPlayerGame(
+      players,
+      activePlayerIndex
+    );
+
+    const playedRounds = [];
+    for (const round of playerRounds || []) {
+      if (round.played) playedRounds.push(round);
+    }
+
+    playedRounds.pop();
+    playedRounds.reverse();
+
+    for (const round of playedRounds) {
+      if (round.strike) numberOfStrikes++;
+    }
+    return numberOfStrikes;
+  }
+
+  // static getCorrectScoreCalc(prevRound: Rounds, numberOfStrikes: number) {
+  //   switch (numberOfStrikes) {
+  //     case 1:
+  //       prevRound.strike = true;
+  //       calcStrike();
+  //       break;
+  //     case 2:
+  //       prevRound.double = true;
+  //       calcDouble();
+  //       break;
+  //     case 3:
+  //       prevRound.turkey = true;
+  //       calcTurkey();
+  //       break;
+  //     case 4:
+  //       prevRound.fourBagger = true;
+  //       calcFourBagger();
+  //       break;
+  //   }
+  // }
 }

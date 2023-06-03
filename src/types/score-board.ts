@@ -26,6 +26,8 @@ export interface Results {
 export interface Players {
   name: string;
   id: number;
-  hdcp: number;
+  hdcpFactor: number;
+  hdcpScore: number | null;
+  maxPossible: number | null;
   game: Rounds[];
 }

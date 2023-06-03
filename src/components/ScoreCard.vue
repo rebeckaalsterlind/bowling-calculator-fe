@@ -3,308 +3,322 @@
     <table class="score-card">
       <tr>
         <th>Player name:</th>
-        <th v-for="column in rounds" :key="column.id">{{ column.id }}</th>
+        <th v-for="column in players[0].game" :key="column.id">
+          {{ column.id }}
+        </th>
         <th>HDcp Score</th>
         <th>Max Score</th>
       </tr>
-      <tr v-for="player in players" :key="player.id">
-        <td>
-          <h3>{{ player.name }}</h3>
-          <h5>HDcp: {{ player.hdcp }}</h5>
+      <tr v-for="(player, index) in players" :key="player.id">
+        <td class="player-details-container">
+          <h5>{{ player.name || `Player ${index + 1}` }}</h5>
+          <h6>HDch6: {{ player.hdcpFactor || "-" }}</h6>
         </td>
         <td
-          v-for="round in player.game"
-          :key="round.id"
+          v-for="frame in player.game"
+          :key="frame.id"
           class="score-box"
-          :class="{ active: activeRound === round.id }"
-          @click="selectRound(round.id, player.id)"
+          :class="{
+            active: frameIndex === frame.id && activePlayerIndex === player.id,
+          }"
+          @click="selectFrame(frame.id, player.id)"
         >
-          <div class="round-scores">
+          <div class="frame-scores">
             <div class="first score">
               {{
-                round.strike
+                frame.strike
                   ? "X"
-                  : round.firstScore === 0
+                  : frame.firstScore === 0
                   ? "-"
-                  : round.firstScore
+                  : frame.firstScore
               }}
             </div>
             <div class="second score">
               {{
-                (round.spare && "/") ||
-                (round.secondScore === 0 && "-") ||
-                (round.tenthFrameSecondStrike && "X") ||
-                round.secondScore
+                (frame.spare && "/") ||
+                (frame.secondScore === 0 && "-") ||
+                (frame.tenthFrameSecondStrike && "X") ||
+                frame.secondScore
               }}
             </div>
-            <div v-if="round.id === 10" class="third score">
+            <div v-if="frame.id === 10" class="third score">
               {{
-                (round.tenthFrameThirdStrike && "X") ||
-                round.thirdScore ||
-                (round.thirdScore === 0 && "-") ||
+                (frame.tenthFrameThirdStrike && "X") ||
+                frame.thirdScore ||
+                (frame.thirdScore === 0 && "-") ||
                 ""
               }}
             </div>
           </div>
-          <div class="round-total">{{ round.totalScore }}</div>
+          <div class="frame-total">{{ frame.totalScore }}</div>
         </td>
-        <td class="score-box">HDcp scores</td>
-        <td class="score-box">{{ 0 }}</td>
+        <td class="score-box">{{ player.hdcpScore || "-" }}</td>
+        <td class="score-box">{{ player.maxPossible }}</td>
       </tr>
     </table>
   </div>
 </template>
 
 <script lang="ts">
-import { Ref, ComputedRef, watch } from "vue";
+import { watch } from "vue";
 import { defineComponent, toRef, ref, computed } from "vue";
 import { usePlayersStore } from "@/store/players";
 import { useScoreStore } from "@/store/scores";
-import type { Rounds } from "@/types/score-board";
 import CaluculatorHelpers from "../helpers/calculator-helper";
 
 export default defineComponent({
   props: { componentKey: { type: Number, required: true } },
   setup(props) {
     const playersStore = usePlayersStore();
-    const players = toRef(playersStore, "players");
     const scoreStore = useScoreStore();
+    const players = toRef(playersStore, "players");
     const standingPins = toRef(scoreStore, "standingPins");
     const points = toRef(scoreStore, "points");
     const numberOfStrikes = ref(0);
-    const activeRound = ref(1);
-    const activePlayer = ref(1);
-    const getRounds: ComputedRef<Rounds[]> = computed(() =>
-      CaluculatorHelpers.getRounds()
-    );
-    const rounds: Ref<Rounds[]> = ref(getRounds);
+    const frameIndex = ref(1);
+    const activePlayerIndex = ref(1);
 
-    const selectRound = (roundId: number, index: number) => {
-      activeRound.value = roundId;
-      activePlayer.value = index;
+    const currentFrame = computed(() =>
+      CaluculatorHelpers.getActiveRound(
+        players.value,
+        frameIndex.value,
+        activePlayerIndex.value
+      )
+    );
+
+    const prevFrame = computed(() =>
+      CaluculatorHelpers.getActiveRound(
+        players.value,
+        frameIndex.value - 1,
+        activePlayerIndex.value
+      )
+    );
+
+    const selectFrame = (roundId: number, index: number) => {
+      frameIndex.value = roundId;
+      activePlayerIndex.value = index;
     };
 
     const nextRound = () => {
       standingPins.value = [...Array(11).keys()];
-      activeRound.value++;
+      frameIndex.value++;
     };
 
-    const checkNumberStrikes = () => {
-      const playerRounds = getPlayerRounds();
-
-      const playedRounds = [];
-      for (const round of playerRounds || []) {
-        if (round.played) playedRounds.push(round);
-      }
-      playedRounds.pop();
-      playedRounds.reverse();
-
-      for (const round of playedRounds) {
-        if (round.strike) {
-          numberOfStrikes.value++;
-        } else return;
-      }
-    };
-
-    const callCorrectScoreCalc = () => {
-      console.log(numberOfStrikes.value);
-
-      const prevRound = getRound(activeRound.value - 1);
-      if (prevRound) {
+    const setStrikeScoring = () => {
+      if (prevFrame.value) {
         switch (numberOfStrikes.value) {
           case 1:
-            prevRound.strike = true;
+            prevFrame.value.strike = true;
             calcStrike();
             break;
           case 2:
-            prevRound.double = true;
+            prevFrame.value.double = true;
             calcDouble();
             break;
           case 3:
-            prevRound.turkey = true;
+            prevFrame.value.turkey = true;
             calcTurkey();
             break;
           case 4:
-            prevRound.fourBagger = true;
+            prevFrame.value.fourBagger = true;
             calcFourBagger();
             break;
         }
+        numberOfStrikes.value = 0;
       }
-      numberOfStrikes.value = 0;
-    };
-
-    const getRound = (selectedRoundId: number) => {
-      const selectPlayer = players.value.find(
-        (player) => player.id === activePlayer.value
-      );
-      return selectPlayer?.game.find((round) => round.id === selectedRoundId);
-    };
-
-    const getPlayerRounds = () => {
-      const foundPlayer = players.value.find(
-        (player) => player.id === activePlayer.value
-      );
-      return foundPlayer?.game;
     };
 
     const handleFirstScore = () => {
-      const round = getRound(activeRound.value);
-      const prevRound = getRound(activeRound.value - 1);
-      if (round) {
-        if (prevRound?.spare) calcSpare();
-        if (prevRound?.spare) calcTotalScore();
+      if (currentFrame.value) {
+        if (prevFrame.value?.spare) {
+          calcSpare();
+          calcTotalScore();
+        }
         if (points.value === 10) {
-          round.strike = true;
-          round.played = true;
+          currentFrame.value.strike = true;
+          currentFrame.value.played = true;
           nextRound();
         } else {
-          round.firstScore = points.value;
+          currentFrame.value.firstScore = points.value;
         }
       }
     };
 
-    const handleSecondScore = async () => {
-      const round = getRound(activeRound.value);
-      const prevRound = getRound(activeRound.value - 1);
-
-      if (round) {
-        round.secondScore = points.value;
-        round.roundScore = points.value + (round.firstScore || 0);
-        round.played = true;
-        if (round.roundScore === 10) {
-          round.spare = true;
-          nextRound();
-          return;
+    const handleSecondScore = () => {
+      if (currentFrame.value) {
+        currentFrame.value.secondScore = points.value;
+        currentFrame.value.roundScore =
+          points.value + (currentFrame.value.firstScore || 0);
+        currentFrame.value.played = true;
+        if (currentFrame.value.roundScore === 10) {
+          currentFrame.value.spare = true;
         } else {
-          if (prevRound?.strike) {
-            console.log("171", prevRound);
-            await checkNumberStrikes();
-            await callCorrectScoreCalc();
+          if (prevFrame.value?.strike) {
+            numberOfStrikes.value = CaluculatorHelpers.getCheckNumberStrikes(
+              players.value,
+              activePlayerIndex.value,
+              numberOfStrikes.value
+            );
+            setStrikeScoring();
           }
           calcTotalScore();
-          nextRound();
         }
+        nextRound();
       }
-    };
-
-    const handleThirdScore = async () => {
-      const round = getRound(activeRound.value);
-      const prevRound = getRound(activeRound.value - 1);
-
-      if (round && prevRound) {
-        const giveThirdShot =
-          round?.roundScore === 10 && round.thirdScore === null;
-
-        if (round.firstScore === null) {
-          round.firstScore = points.value;
-          if (prevRound?.spare) calcSpare();
-          if (prevRound?.spare) calcTotalScore();
-          if (points.value === 10) {
-            round.tenthFrameFirstStrike = true;
-            standingPins.value = [...Array(11).keys()];
-            return;
-          }
-        } else if (round.secondScore === null) {
-          round.secondScore = points.value;
-          round.roundScore = round.firstScore + points.value;
-          round.played = true;
-
-          if (round.secondScore === 10) round.tenthFrameSecondStrike = true;
-          else if (round.roundScore === 10) round.spare = true;
-          standingPins.value = [...Array(11).keys()];
-          console.log("prev", prevRound);
-          if (prevRound?.strike) {
-            console.log("calling strike?");
-            await checkNumberStrikes();
-            await callCorrectScoreCalc();
-            calcTotalScore();
-            nextRound();
-          }
-        } else if (giveThirdShot) {
-          // standingPins.value = [...Array(11).keys()];
-
-          round.thirdScore = points.value;
-          round.roundScore += points.value;
-          if (round.thirdScore === 10) round.tenthFrameThirdStrike = true;
-          round.played = true;
-          calcTotalScore();
-        }
-      }
-
-      //   calcFrameTen();
     };
 
     const setRoundScore = async () => {
-      const round = getRound(activeRound.value);
-
-      if (round) {
-        if (round.id === 10) handleThirdScore();
-        else if (round.firstScore === null) {
-          handleFirstScore();
-        } else if (round.secondScore === null) {
-          handleSecondScore();
-        }
+      if (currentFrame.value?.id === 10) {
+        handleTenthFrame();
+        return;
+      }
+      if (currentFrame.value?.firstScore === null) {
+        handleFirstScore();
+        return;
+      }
+      if (currentFrame.value?.secondScore === null) {
+        handleSecondScore();
       }
     };
 
-    const calcTotalScore = () => {
-      let sumTotal = 0;
-      const playerRounds = getPlayerRounds();
-      playerRounds?.forEach((round) => {
-        if (round.played) {
-          sumTotal += round.roundScore;
-          round.totalScore = sumTotal;
-        }
-      });
-    };
-
     const calcSpare = () => {
-      const spareRound = getRound(activeRound.value - 1);
-      if (spareRound) spareRound.roundScore = points.value + 10;
+      if (prevFrame.value) {
+        prevFrame.value.roundScore = points.value + 10;
+      }
     };
 
     const calcStrike = () => {
-      console.log("in strike");
-      const strikeRound = getRound(activeRound.value - 1);
-      const round = getRound(activeRound.value);
-      if (strikeRound && round) {
-        console.log("in strieround", strikeRound, round);
-
-        strikeRound.roundScore = round.roundScore + 10;
+      if (prevFrame.value && currentFrame.value?.roundScore) {
+        prevFrame.value.roundScore = currentFrame.value.roundScore + 10;
       }
     };
 
     const calcDouble = async () => {
-      const doubleRound = getRound(activeRound.value - 2);
-      const round = getRound(activeRound.value);
-
-      if (doubleRound && round) {
-        doubleRound.roundScore = round.roundScore + 20;
+      const doubleRound = CaluculatorHelpers.getActiveRound(
+        players.value,
+        frameIndex.value - 2,
+        activePlayerIndex.value
+      );
+      if (doubleRound && currentFrame.value) {
+        doubleRound.roundScore = currentFrame?.value.roundScore + 20;
       }
-
       calcStrike();
     };
 
     const calcTurkey = () => {
-      const turkeyRound = getRound(activeRound.value - 3);
+      const turkeyRound = CaluculatorHelpers.getActiveRound(
+        players.value,
+        frameIndex.value - 3,
+        activePlayerIndex.value
+      );
       if (turkeyRound) turkeyRound.roundScore = 30;
       calcDouble();
     };
 
     const calcFourBagger = () => {
-      const fourBaggerRound = getRound(activeRound.value - 4);
+      const fourBaggerRound = CaluculatorHelpers.getActiveRound(
+        players.value,
+        frameIndex.value - 4,
+        activePlayerIndex.value
+      );
       if (fourBaggerRound) fourBaggerRound.roundScore = 30;
       calcTurkey;
     };
 
-    // const calcFrameTen = () => {
-    //   const round = getRound(activeRound.value);
-    //   if (round?.thirdScore === null) {
-    //     round.thirdScore = points.value;
-    //   }
-    //   console.log("the round", round);
-    //   console.log("frame ten");
-    // };
+    const handleTenthFrame = async () => {
+      if (currentFrame.value?.firstScore === null) {
+        handleTenthFrameFirstScore();
+      } else if (currentFrame.value?.secondScore === null) {
+        handleTenthFrameSecondScore();
+      } else if (
+        currentFrame.value?.roundScore === 10 &&
+        currentFrame.value.thirdScore === null
+      ) {
+        handleTenthFrameThirdScore();
+      }
+    };
+
+    const handleTenthFrameFirstScore = () => {
+      if (currentFrame.value && prevFrame.value) {
+        currentFrame.value.firstScore = points.value;
+        if (prevFrame.value.spare) calcSpare();
+        if (prevFrame.value.spare) calcTotalScore();
+        if (points.value === 10) {
+          currentFrame.value.tenthFrameFirstStrike = true;
+          standingPins.value = [...Array(11).keys()];
+          return;
+        }
+      }
+    };
+
+    const handleTenthFrameSecondScore = async () => {
+      if (currentFrame.value?.firstScore) {
+        currentFrame.value.secondScore = points.value;
+        currentFrame.value.roundScore =
+          currentFrame.value.firstScore + points.value;
+        currentFrame.value.played = true;
+      }
+      checkTenthFrameSpare();
+      checkTenthFrameStrike();
+    };
+
+    const checkTenthFrameSpare = () => {
+      if (currentFrame.value?.secondScore === 10)
+        currentFrame.value.tenthFrameSecondStrike = true;
+      else if (currentFrame.value?.roundScore === 10)
+        currentFrame.value.spare = true;
+      standingPins.value = [...Array(11).keys()];
+    };
+
+    const checkTenthFrameStrike = () => {
+      if (prevFrame.value?.strike) {
+        numberOfStrikes.value = CaluculatorHelpers.getCheckNumberStrikes(
+          players.value,
+          activePlayerIndex.value,
+          numberOfStrikes.value
+        );
+        setStrikeScoring();
+        calcTotalScore();
+        nextRound();
+      }
+    };
+
+    const handleTenthFrameThirdScore = () => {
+      if (currentFrame.value) {
+        currentFrame.value.thirdScore = points.value;
+        currentFrame.value.roundScore += points.value;
+        if (currentFrame.value.thirdScore === 10)
+          currentFrame.value.tenthFrameThirdStrike = true;
+        currentFrame.value.played = true;
+        calcTotalScore();
+      }
+    };
+
+    const calcTotalScore = () => {
+      let sumTotal = 0;
+      const playerGame = CaluculatorHelpers.getPlayerGame(
+        players.value,
+        activePlayerIndex.value
+      );
+      playerGame?.forEach((frame) => {
+        if (frame.played) {
+          sumTotal += frame.roundScore;
+          frame.totalScore = sumTotal;
+        }
+      });
+      calcHdcp();
+    };
+
+    const calcHdcp = () => {
+      const player = CaluculatorHelpers.getActivePlayer(
+        players.value,
+        activePlayerIndex.value
+      );
+      if (player?.hdcpFactor) {
+        player.hdcpScore =
+          player.hdcpFactor + CaluculatorHelpers.getCalcHdcp(player.game);
+      }
+    };
 
     watch(
       () => props.componentKey,
@@ -312,10 +326,10 @@ export default defineComponent({
     );
 
     return {
-      rounds,
       players,
-      selectRound,
-      activeRound,
+      selectFrame,
+      frameIndex,
+      activePlayerIndex,
     };
   },
 });
@@ -324,49 +338,65 @@ export default defineComponent({
 <style scoped>
 .score-card-container {
   width: 100%;
+  display: flex;
+  justify-content: center;
 }
 .score-card {
   display: flex;
   flex-flow: column nowrap;
-  border: 3px solid black;
+  justify-content: space-between;
+  border: 3px solid #13202d;
+  border-radius: 5px;
   width: 100%;
-  height: 200px;
+  max-width: 60rem;
+  box-shadow: 5px 5px 15px#13202d;
+  background: rgb(108, 94, 37);
 }
 .score-box {
   display: flex;
   flex-flow: column nowrap;
-  height: 100%;
+  justify-content: center;
+  max-height: 80px;
   width: 100%;
-  background: rgb(199, 197, 155);
 }
 
-.round-total {
+.player-details-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+}
+.frame-total {
   height: 50%;
+  background: grey;
 }
 
 tr {
   display: flex;
   flex-direction: row;
+  align-items: center;
 }
 
 th {
   flex: 1;
+  padding: 10px;
 }
 
 td {
   height: 80px;
-  border: 1px solid black;
+  border: 1px solid #13202d;
   flex: 1;
 }
 
 .active {
-  border: 2px solid black;
+  border: 4px solid #8f3a0f;
+  border-radius: 5px;
 }
 
-.round-scores {
+.frame-scores {
   display: flex;
   height: 50%;
-  background: yellow;
+  background: rgb(168, 168, 168);
 }
 
 .score {
@@ -376,13 +406,9 @@ td {
 .first {
   background: white;
 }
-.second {
-  border: 1px solid black;
-}
 
 .third {
-  border: 1px solid black;
-  background: green;
+  background: rgb(96, 96, 96);
   max-width: 33%;
 }
 </style>

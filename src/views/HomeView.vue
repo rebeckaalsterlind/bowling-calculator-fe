@@ -1,5 +1,6 @@
 <template>
   <div class="home">
+    <div><h1>BOWLING CALCULATOR</h1></div>
     <PinBoard @componentKey="handleComponentKey" />
     <PlayersCard />
     <ScoreCard :componentKey="componentKey" />
@@ -34,7 +35,7 @@ export default defineComponent({
 
 <style>
 * {
-  box-sizing: border-box;
+  /* box-sizing: border-box; */
   margin: 0;
   padding: 0;
 }
@@ -42,10 +43,10 @@ export default defineComponent({
 .home {
   height: 100vh;
   max-width: 100vw;
-  margin: 2rem;
   display: flex;
   flex-flow: column nowrap;
   justify-content: space-evenly;
   align-items: center;
+  background: rgb(82, 82, 91);
 }
 </style>
