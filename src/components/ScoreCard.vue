@@ -72,8 +72,8 @@ export default defineComponent({
     const standingPins = toRef(scoreStore, "standingPins");
     const points = toRef(scoreStore, "points");
     const numberOfStrikes = ref(0);
-    const activeRound = ref();
-    const activePlayer = ref();
+    const activeRound = ref(1);
+    const activePlayer = ref(1);
     const getRounds: ComputedRef<Rounds[]> = computed(() =>
       CaluculatorHelpers.getRounds()
     );
@@ -90,8 +90,10 @@ export default defineComponent({
     };
 
     const checkNumberStrikes = () => {
+      const playerRounds = getPlayerRounds();
+
       const playedRounds = [];
-      for (const round of rounds.value) {
+      for (const round of playerRounds || []) {
         if (round.played) playedRounds.push(round);
       }
       playedRounds.pop();
@@ -138,6 +140,13 @@ export default defineComponent({
       return selectPlayer?.game.find((round) => round.id === selectedRoundId);
     };
 
+    const getPlayerRounds = () => {
+      const foundPlayer = players.value.find(
+        (player) => player.id === activePlayer.value
+      );
+      return foundPlayer?.game;
+    };
+
     const handleFirstScore = () => {
       const round = getRound(activeRound.value);
       const prevRound = getRound(activeRound.value - 1);
@@ -168,6 +177,7 @@ export default defineComponent({
           return;
         } else {
           if (prevRound?.strike) {
+            console.log("171", prevRound);
             await checkNumberStrikes();
             await callCorrectScoreCalc();
           }
@@ -202,8 +212,9 @@ export default defineComponent({
           if (round.secondScore === 10) round.tenthFrameSecondStrike = true;
           else if (round.roundScore === 10) round.spare = true;
           standingPins.value = [...Array(11).keys()];
-
+          console.log("prev", prevRound);
           if (prevRound?.strike) {
+            console.log("calling strike?");
             await checkNumberStrikes();
             await callCorrectScoreCalc();
             calcTotalScore();
@@ -238,14 +249,11 @@ export default defineComponent({
 
     const calcTotalScore = () => {
       let sumTotal = 0;
-      console.log("in calt total");
-      rounds.value.forEach((round) => {
+      const playerRounds = getPlayerRounds();
+      playerRounds?.forEach((round) => {
         if (round.played) {
-          console.log("rounds played ", round);
-
           sumTotal += round.roundScore;
           round.totalScore = sumTotal;
-          console.log("round totalscore", round.totalScore);
         }
       });
     };
