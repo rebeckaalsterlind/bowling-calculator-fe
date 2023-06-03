@@ -28,14 +28,20 @@
             </div>
             <div class="second score">
               {{
-                round.spare
-                  ? "/"
-                  : round.secondScore === 0
-                  ? "-"
-                  : round.secondScore
+                (round.spare && "/") ||
+                (round.secondScore === 0 && "-") ||
+                (round.tenthFrameSecondStrike && "X") ||
+                round.secondScore
               }}
             </div>
-            <div v-if="round.id === 10" class="third score">10</div>
+            <div v-if="round.id === 10" class="third score">
+              {{
+                (round.tenthFrameThirdStrike && "X") ||
+                round.thirdScore ||
+                (round.thirdScore === 0 && "-") ||
+                ""
+              }}
+            </div>
           </div>
           <div class="round-total">{{ round.totalScore }}</div>
         </td>
@@ -94,25 +100,29 @@ export default defineComponent({
     };
 
     const callCorrectScoreCalc = () => {
-      const prevRound = getRound(activeRound.value - 1);
+      console.log(numberOfStrikes.value);
 
+      const prevRound = getRound(activeRound.value - 1);
       if (prevRound) {
         switch (numberOfStrikes.value) {
           case 1:
             prevRound.strike = true;
+            calcStrike();
             break;
           case 2:
             prevRound.double = true;
+            calcDouble();
             break;
           case 3:
             prevRound.turkey = true;
+            calcTurkey();
             break;
           case 4:
             prevRound.fourBagger = true;
+            calcFourBagger();
             break;
         }
       }
-
       numberOfStrikes.value = 0;
     };
 
@@ -144,19 +154,14 @@ export default defineComponent({
         round.secondScore = points.value;
         round.roundScore = points.value + (round.firstScore || 0);
         round.played = true;
-
         if (round.roundScore === 10) {
           round.spare = true;
           nextRound();
+          return;
         } else {
           if (prevRound?.strike) {
             await checkNumberStrikes();
             await callCorrectScoreCalc();
-
-            if (prevRound?.fourBagger) calcFourBagger();
-            else if (prevRound?.turkey) calcTurkey();
-            else if (prevRound?.double) calcDouble();
-            else if (prevRound?.strike) calcStrike();
           }
           calcTotalScore();
           nextRound();
@@ -164,11 +169,58 @@ export default defineComponent({
       }
     };
 
+    const handleThirdScore = async () => {
+      const round = getRound(activeRound.value);
+      const prevRound = getRound(activeRound.value - 1);
+
+      if (round && prevRound) {
+        const giveThirdShot =
+          round?.roundScore === 10 && round.thirdScore === null;
+
+        if (round.firstScore === null) {
+          round.firstScore = points.value;
+          if (prevRound?.spare) calcSpare();
+          if (prevRound?.spare) calcTotalScore();
+          if (points.value === 10) {
+            round.tenthFrameFirstStrike = true;
+            standingPins.value = [...Array(11).keys()];
+            return;
+          }
+        } else if (round.secondScore === null) {
+          round.secondScore = points.value;
+          round.roundScore = round.firstScore + points.value;
+          round.played = true;
+
+          if (round.secondScore === 10) round.tenthFrameSecondStrike = true;
+          else if (round.roundScore === 10) round.spare = true;
+          standingPins.value = [...Array(11).keys()];
+
+          if (prevRound?.strike) {
+            await checkNumberStrikes();
+            await callCorrectScoreCalc();
+            calcTotalScore();
+            nextRound();
+          }
+        } else if (giveThirdShot) {
+          // standingPins.value = [...Array(11).keys()];
+
+          round.thirdScore = points.value;
+          round.roundScore += points.value;
+          if (round.thirdScore === 10) round.tenthFrameThirdStrike = true;
+          round.played = true;
+          calcTotalScore();
+        }
+      }
+
+      //   calcFrameTen();
+    };
+
     const setRoundScore = async () => {
       const round = getRound(activeRound.value);
 
       if (round) {
-        if (round.firstScore === null) {
+        if (round.id === 10) handleThirdScore();
+        else if (round.firstScore === null) {
           handleFirstScore();
         } else if (round.secondScore === null) {
           handleSecondScore();
@@ -178,11 +230,14 @@ export default defineComponent({
 
     const calcTotalScore = () => {
       let sumTotal = 0;
-
+      console.log("in calt total");
       rounds.value.forEach((round) => {
         if (round.played) {
+          console.log("rounds played ", round);
+
           sumTotal += round.roundScore;
           round.totalScore = sumTotal;
+          console.log("round totalscore", round.totalScore);
         }
       });
     };
@@ -193,10 +248,12 @@ export default defineComponent({
     };
 
     const calcStrike = () => {
+      console.log("in strike");
       const strikeRound = getRound(activeRound.value - 1);
       const round = getRound(activeRound.value);
-
       if (strikeRound && round) {
+        console.log("in strieround", strikeRound, round);
+
         strikeRound.roundScore = round.roundScore + 10;
       }
     };
@@ -223,6 +280,15 @@ export default defineComponent({
       if (fourBaggerRound) fourBaggerRound.roundScore = 30;
       calcTurkey;
     };
+
+    // const calcFrameTen = () => {
+    //   const round = getRound(activeRound.value);
+    //   if (round?.thirdScore === null) {
+    //     round.thirdScore = points.value;
+    //   }
+    //   console.log("the round", round);
+    //   console.log("frame ten");
+    // };
 
     watch(
       () => props.componentKey,

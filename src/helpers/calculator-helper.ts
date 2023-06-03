@@ -6,6 +6,7 @@ export default class CalucalorHelpers {
         active: false,
         firstScore: null,
         secondScore: null,
+        thirdScore: null,
         roundScore: 0,
         totalScore: null,
         id: id,
@@ -15,6 +16,9 @@ export default class CalucalorHelpers {
         turkey: false,
         fourBagger: false,
         played: false,
+        tenthFrameFirstStrike: false,
+        tenthFrameSecondStrike: false,
+        tenthFrameThirdStrike: false,
       });
     }
     return rounds;
