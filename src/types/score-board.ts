@@ -22,3 +22,10 @@ export interface Results {
   title: string;
   value: number | null;
 }
+
+export interface Players {
+  name: string;
+  id: number;
+  hdcp: number;
+  game: Rounds[];
+}

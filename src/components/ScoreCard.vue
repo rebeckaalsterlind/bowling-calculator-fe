@@ -7,14 +7,17 @@
         <th>HDcp Score</th>
         <th>Max Score</th>
       </tr>
-      <tr v-for="player in players" :key="player">
-        <td>{{ player }}</td>
+      <tr v-for="player in players" :key="player.id">
+        <td>
+          <h3>{{ player.name }}</h3>
+          <h5>HDcp: {{ player.hdcp }}</h5>
+        </td>
         <td
-          v-for="round in rounds"
+          v-for="round in player.game"
           :key="round.id"
           class="score-box"
           :class="{ active: activeRound === round.id }"
-          @click="selectRound(round.id)"
+          @click="selectRound(round.id, player.id)"
         >
           <div class="round-scores">
             <div class="first score">
@@ -54,7 +57,6 @@
 
 <script lang="ts">
 import { Ref, ComputedRef, watch } from "vue";
-
 import { defineComponent, toRef, ref, computed } from "vue";
 import { usePlayersStore } from "@/store/players";
 import { useScoreStore } from "@/store/scores";
@@ -67,17 +69,20 @@ export default defineComponent({
     const playersStore = usePlayersStore();
     const players = toRef(playersStore, "players");
     const scoreStore = useScoreStore();
-    const activeRound = toRef(scoreStore, "activeRound");
     const standingPins = toRef(scoreStore, "standingPins");
     const points = toRef(scoreStore, "points");
     const numberOfStrikes = ref(0);
-
+    const activeRound = ref();
+    const activePlayer = ref();
     const getRounds: ComputedRef<Rounds[]> = computed(() =>
       CaluculatorHelpers.getRounds()
     );
     const rounds: Ref<Rounds[]> = ref(getRounds);
 
-    const selectRound = (roundId: number) => (activeRound.value = roundId);
+    const selectRound = (roundId: number, index: number) => {
+      activeRound.value = roundId;
+      activePlayer.value = index;
+    };
 
     const nextRound = () => {
       standingPins.value = [...Array(11).keys()];
@@ -127,7 +132,10 @@ export default defineComponent({
     };
 
     const getRound = (selectedRoundId: number) => {
-      return rounds.value.find((round) => round.id === selectedRoundId);
+      const selectPlayer = players.value.find(
+        (player) => player.id === activePlayer.value
+      );
+      return selectPlayer?.game.find((round) => round.id === selectedRoundId);
     };
 
     const handleFirstScore = () => {
