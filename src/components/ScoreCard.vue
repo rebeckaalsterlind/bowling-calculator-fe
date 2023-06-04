@@ -12,7 +12,7 @@
       <tr v-for="(player, index) in players" :key="player.id">
         <td class="player-details-container">
           <h5>{{ player.name || `Player ${index + 1}` }}</h5>
-          <h6>HDch: {{ player.hdcpFactor || "-" }} {{ player.id }}</h6>
+          <h6>HDch: {{ player.hdcpFactor || "-" }}</h6>
         </td>
         <td
           v-for="frame in player.game"
@@ -363,6 +363,7 @@ export default defineComponent({
   border: 3px solid #13202d;
   border-radius: 5px;
   width: 100%;
+  min-width: 40rem;
   max-width: 60rem;
   box-shadow: 5px 5px 15px#13202d;
   background: rgb(159, 139, 61);

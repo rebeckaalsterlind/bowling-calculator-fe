@@ -47,5 +47,6 @@ export default defineComponent({
   justify-content: space-evenly;
   align-items: center;
   background: rgb(82, 82, 91);
+  padding: 2rem;
 }
 </style>
