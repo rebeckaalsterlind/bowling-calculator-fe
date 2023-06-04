@@ -28,7 +28,6 @@ export default defineComponent({
     const showAddPlayer = ref(false);
     const playerName = ref("");
     const playerHdcp = ref();
-    const randomId = Math.floor(Math.random() * 100 + 1);
     const toggleAddPlayer = () => {
       showAddPlayer.value = !showAddPlayer.value;
     };
@@ -39,7 +38,7 @@ export default defineComponent({
         hdcpFactor: playerHdcp.value,
         hdcpScore: null,
         maxPossible: 300,
-        id: randomId,
+        id: Math.floor(Math.random() * 100 + 1),
         game: CaluculatorHelpers.getRounds(),
       });
       toggleAddPlayer();

@@ -12,7 +12,7 @@
       <tr v-for="(player, index) in players" :key="player.id">
         <td class="player-details-container">
           <h5>{{ player.name || `Player ${index + 1}` }}</h5>
-          <h6>HDch6: {{ player.hdcpFactor || "-" }}</h6>
+          <h6>HDch: {{ player.hdcpFactor || "-" }} {{ player.id }}</h6>
         </td>
         <td
           v-for="frame in player.game"
@@ -21,7 +21,7 @@
           :class="{
             active: frameIndex === frame.id && activePlayerIndex === player.id,
           }"
-          @click="selectFrame(frame.id, player.id)"
+          @click="setActiveIndex(frame.id, player.id)"
         >
           <div class="frame-scores">
             <div class="first score">
@@ -94,10 +94,13 @@ export default defineComponent({
       )
     );
 
-    const selectFrame = (roundId: number, index: number) => {
-      frameIndex.value = roundId;
+    const setActiveIndex = (roundId: number, index: number) => {
       activePlayerIndex.value = index;
-      //find frame where played is false
+      frameIndex.value =
+        CaluculatorHelpers.getSelectFrame(
+          players.value,
+          activePlayerIndex.value
+        ) || roundId;
     };
 
     const nextRound = () => {
@@ -315,12 +318,11 @@ export default defineComponent({
         players.value,
         activePlayerIndex.value
       );
-      if (player?.hdcpFactor) {
-        player.hdcpScore = CaluculatorHelpers.getCalcHdcp(
-          player.game,
-          player.hdcpFactor
-        );
-      }
+      if (!player?.hdcpFactor) return;
+      player.hdcpScore = CaluculatorHelpers.getCalcHdcp(
+        player.game,
+        player.hdcpFactor
+      );
     };
 
     watch(
@@ -330,7 +332,7 @@ export default defineComponent({
 
     return {
       players,
-      selectFrame,
+      setActiveIndex,
       frameIndex,
       activePlayerIndex,
     };

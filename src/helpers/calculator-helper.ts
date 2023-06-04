@@ -87,4 +87,16 @@ export default class CalucalorHelpers {
     }
     return numberOfStrikes;
   }
+
+  static getSelectFrame(players: Players[], activePlayerIndex: number) {
+    const activePlayer = CalucalorHelpers.getActivePlayer(
+      players,
+      activePlayerIndex
+    );
+
+    if (activePlayer) {
+      const unplayedFrame = activePlayer.game.find((frame) => !frame.played);
+      if (unplayedFrame) return unplayedFrame.id;
+    }
+  }
 }
