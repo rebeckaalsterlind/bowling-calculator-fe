@@ -17,12 +17,6 @@ export interface Rounds {
   tenthFrameThirdStrike: boolean;
 }
 
-export interface Results {
-  id: number;
-  title: string;
-  value: number | null;
-}
-
 export interface Players {
   name: string;
   id: number;

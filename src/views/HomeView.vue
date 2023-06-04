@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <div><h1>BOWLING CALCULATOR</h1></div>
+    <h1>BOWLING CALCULATOR</h1>
     <PinBoard @componentKey="handleComponentKey" />
     <PlayersCard />
     <ScoreCard :componentKey="componentKey" />

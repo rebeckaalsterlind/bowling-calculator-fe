@@ -42,9 +42,6 @@ export default defineComponent({
 </script>
 
 <style scoped lang="scss">
-.pins:hover {
-  border: 2px solid #8f3a0f;
-}
 .pin-board-container {
   width: 100%;
   display: flex;
@@ -55,12 +52,17 @@ export default defineComponent({
   display: flex;
   flex-flow: row nowrap;
 }
-
-button {
-  width: 40px;
-  height: 40px;
-  margin: 5px;
+.pins {
+  font-weight: 500;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: 0.25rem;
   border-radius: 50%;
   box-shadow: 2px 2px 15px#13202d;
+  color: #13202d;
+  &:hover {
+    border: 2px solid #8f3a0f;
+    font-weight: 700;
+  }
 }
 </style>

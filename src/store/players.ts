@@ -1,6 +1,5 @@
 import { Players } from "@/types/score-board";
 import { defineStore } from "pinia";
-
 import type { Ref } from "vue";
 import { ref } from "vue";
 import CaluculatorHelpers from "../helpers/calculator-helper";

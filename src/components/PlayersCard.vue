@@ -9,7 +9,7 @@
         pattern="[0 - 9]"
         placeholder="HDcp.."
       />
-      <div>
+      <div class="add-player-option-container">
         <button @click="handleSavePlayer">Save</button>
         <button @click="toggleAddPlayer">Cancel</button>
       </div>
@@ -59,7 +59,10 @@ export default defineComponent({
 button {
   padding: 5px 10px;
   border-radius: 5px;
-  margin: 0 0.25rem;
+  font-weight: 500;
+  &:hover {
+    font-weight: 700;
+  }
 }
 
 input {
@@ -71,10 +74,15 @@ button,
 input {
   box-shadow: 2px 2px 15px#13202d;
 }
-
 .add-player-container {
   display: flex;
   flex-direction: column;
+  justify-content: space-around;
   gap: 0.25rem;
+}
+.add-player-option-container {
+  display: inherit;
+  justify-content: space-around;
+  gap: inherit;
 }
 </style>

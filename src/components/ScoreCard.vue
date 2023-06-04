@@ -186,7 +186,17 @@ export default defineComponent({
     };
 
     const calcSpare = () => {
+      const secondPrevFrame = CaluculatorHelpers.getActiveRound(
+        players.value,
+        frameIndex.value - 2,
+        activePlayerIndex.value
+      );
       if (prevFrame.value) {
+        if (secondPrevFrame?.strike && !secondPrevFrame.roundScore) {
+          secondPrevFrame.roundScore += points.value + 20;
+          calcTotalScore();
+          return;
+        }
         prevFrame.value.roundScore = points.value + 10;
       }
     };
@@ -355,7 +365,7 @@ export default defineComponent({
   width: 100%;
   max-width: 60rem;
   box-shadow: 5px 5px 15px#13202d;
-  background: rgb(108, 94, 37);
+  background: rgb(159, 139, 61);
 }
 .score-box {
   display: flex;
@@ -363,6 +373,7 @@ export default defineComponent({
   justify-content: center;
   max-height: 80px;
   width: 100%;
+  background: white;
 }
 
 .player-details-container {
@@ -373,7 +384,7 @@ export default defineComponent({
 }
 .frame-total {
   height: 50%;
-  background: grey;
+  background: rgb(224, 224, 224);
 }
 
 tr {
@@ -413,7 +424,7 @@ td {
 }
 
 .third {
-  background: rgb(96, 96, 96);
+  background: rgb(112, 112, 112);
   max-width: 33%;
 }
 </style>
