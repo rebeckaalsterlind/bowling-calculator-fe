@@ -26,17 +26,22 @@ export default class CalucalorHelpers {
     return rounds;
   };
 
-  static getCalcHdcp(playersGame: Rounds[]) {
+  static getCalcHdcp(playersGame: Rounds[], hdcpFactor: number) {
     let playedRounds = 0;
     let totalScore = 0;
 
     for (const round of playersGame) {
       if (round?.roundScore) {
-        totalScore = round.roundScore;
+        totalScore += round.roundScore;
         playedRounds++;
       }
     }
-    return totalScore / playedRounds;
+
+    const average = totalScore / (playedRounds * 30);
+    const hdcp = hdcpFactor / 300;
+    let hdcpScore = (average + hdcp) / 2;
+    hdcpScore *= 300;
+    return Math.floor(hdcpScore);
   }
 
   static getActivePlayer(players: Players[], activePlayerIndex: number) {
@@ -82,25 +87,4 @@ export default class CalucalorHelpers {
     }
     return numberOfStrikes;
   }
-
-  // static getCorrectScoreCalc(prevRound: Rounds, numberOfStrikes: number) {
-  //   switch (numberOfStrikes) {
-  //     case 1:
-  //       prevRound.strike = true;
-  //       calcStrike();
-  //       break;
-  //     case 2:
-  //       prevRound.double = true;
-  //       calcDouble();
-  //       break;
-  //     case 3:
-  //       prevRound.turkey = true;
-  //       calcTurkey();
-  //       break;
-  //     case 4:
-  //       prevRound.fourBagger = true;
-  //       calcFourBagger();
-  //       break;
-  //   }
-  // }
 }

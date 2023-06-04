@@ -97,6 +97,7 @@ export default defineComponent({
     const selectFrame = (roundId: number, index: number) => {
       frameIndex.value = roundId;
       activePlayerIndex.value = index;
+      //find frame where played is false
     };
 
     const nextRound = () => {
@@ -315,8 +316,10 @@ export default defineComponent({
         activePlayerIndex.value
       );
       if (player?.hdcpFactor) {
-        player.hdcpScore =
-          player.hdcpFactor + CaluculatorHelpers.getCalcHdcp(player.game);
+        player.hdcpScore = CaluculatorHelpers.getCalcHdcp(
+          player.game,
+          player.hdcpFactor
+        );
       }
     };
 
