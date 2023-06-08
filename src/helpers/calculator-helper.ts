@@ -1,4 +1,6 @@
-import { Players, Rounds } from "@/types/score-board";
+import { Rounds } from "@/types/score-board";
+import { usePlayersStore } from "@/store/players";
+import { toRef } from "vue";
 
 export default class CalucalorHelpers {
   static getRounds = () => {
@@ -44,35 +46,35 @@ export default class CalucalorHelpers {
     return Math.floor(hdcpScore);
   }
 
-  static getActivePlayer(players: Players[], activePlayerIndex: number) {
-    return players.find((player) => player.id === activePlayerIndex);
+  static getActivePlayer(activePlayerIndex: number) {
+    const playersStore = usePlayersStore();
+    const players = toRef(playersStore, "players");
+    return players.value.find((player) => player.id === activePlayerIndex);
   }
 
-  static getActiveRound(
-    players: Players[],
-    activeRoundId: number,
-    activePlayer: number
-  ) {
-    const selectPlayer = players.find((player) => player.id === activePlayer);
+  static getActiveRound(activeRoundId: number, activePlayer: number) {
+    const playersStore = usePlayersStore();
+    const players = toRef(playersStore, "players");
+    const selectPlayer = players.value.find(
+      (player) => player.id === activePlayer
+    );
     return selectPlayer?.game.find((round) => round.id === activeRoundId);
   }
 
-  static getPlayerGame(players: Players[], activePlayerIndex: number) {
-    const foundPlayer = players.find(
+  static getPlayerGame(activePlayerIndex: number) {
+    const playersStore = usePlayersStore();
+    const players = toRef(playersStore, "players");
+    const foundPlayer = players.value.find(
       (player) => player.id === activePlayerIndex
     );
     return foundPlayer?.game || [];
   }
 
   static getCheckNumberStrikes(
-    players: Players[],
     activePlayerIndex: number,
     numberOfStrikes: number
   ) {
-    const playerRounds = CalucalorHelpers.getPlayerGame(
-      players,
-      activePlayerIndex
-    );
+    const playerRounds = CalucalorHelpers.getPlayerGame(activePlayerIndex);
 
     const playedRounds = [];
     for (const round of playerRounds || []) {
@@ -88,15 +90,15 @@ export default class CalucalorHelpers {
     return numberOfStrikes;
   }
 
-  static getSelectFrame(players: Players[], activePlayerIndex: number) {
-    const activePlayer = CalucalorHelpers.getActivePlayer(
-      players,
-      activePlayerIndex
-    );
+  static getSelectFrame(activePlayerIndex: number) {
+    const activePlayer = CalucalorHelpers.getActivePlayer(activePlayerIndex);
 
     if (activePlayer) {
       const unplayedFrame = activePlayer.game.find((frame) => !frame.played);
-      if (unplayedFrame) return unplayedFrame.id;
+      if (unplayedFrame) {
+        unplayedFrame.active = true;
+        return unplayedFrame.id;
+      }
     }
   }
 }

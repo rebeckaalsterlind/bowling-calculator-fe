@@ -1,60 +1,11 @@
 <template>
   <div class="score-card-container">
     <table class="score-card">
-      <tr>
-        <th>Player name:</th>
-        <th v-for="column in players[0].game" :key="column.id">
-          {{ column.id }}
-        </th>
-        <th>HDcp Score</th>
-        <th>Max Score</th>
-      </tr>
-      <tr v-for="(player, index) in players" :key="player.id">
-        <td class="player-details-container">
-          <h5>{{ player.name || `Player ${index + 1}` }}</h5>
-          <h6>HDch: {{ player.hdcpFactor || "-" }}</h6>
-        </td>
-        <td
-          v-for="frame in player.game"
-          :key="frame.id"
-          class="score-box"
-          :class="{
-            active: frameIndex === frame.id && activePlayerIndex === player.id,
-          }"
-          @click="setActiveIndex(frame.id, player.id)"
-        >
-          <div class="frame-scores">
-            <div class="first score">
-              {{
-                frame.strike
-                  ? "X"
-                  : frame.firstScore === 0
-                  ? "-"
-                  : frame.firstScore
-              }}
-            </div>
-            <div class="second score">
-              {{
-                (frame.spare && "/") ||
-                (frame.secondScore === 0 && "-") ||
-                (frame.tenthFrameSecondStrike && "X") ||
-                frame.secondScore
-              }}
-            </div>
-            <div v-if="frame.id === 10" class="third score">
-              {{
-                (frame.tenthFrameThirdStrike && "X") ||
-                frame.thirdScore ||
-                (frame.thirdScore === 0 && "-") ||
-                ""
-              }}
-            </div>
-          </div>
-          <div class="frame-total">{{ frame.totalScore }}</div>
-        </td>
-        <td class="score-box">{{ player.hdcpScore || "-" }}</td>
-        <td class="score-box">{{ player.maxPossible }}</td>
-      </tr>
+      <ScoreCardHeader />
+      <ScoreCardContent
+        @activePlayerIndex="activePlayerIndex = $event"
+        @frameIndex="frameIndex = $event"
+      />
     </table>
   </div>
 </template>
@@ -65,8 +16,11 @@ import { defineComponent, toRef, ref, computed } from "vue";
 import { usePlayersStore } from "@/store/players";
 import { useScoreStore } from "@/store/scores";
 import CaluculatorHelpers from "../helpers/calculator-helper";
+import ScoreCardHeader from "./ScoreCardHeader.vue";
+import ScoreCardContent from "./ScoreCardContent.vue";
 
 export default defineComponent({
+  components: { ScoreCardHeader, ScoreCardContent },
   props: { componentKey: { type: Number, required: true } },
   setup(props) {
     const playersStore = usePlayersStore();
@@ -77,10 +31,8 @@ export default defineComponent({
     const numberOfStrikes = ref(0);
     const frameIndex = ref(1);
     const activePlayerIndex = ref(1);
-
     const currentFrame = computed(() =>
       CaluculatorHelpers.getActiveRound(
-        players.value,
         frameIndex.value,
         activePlayerIndex.value
       )
@@ -88,20 +40,10 @@ export default defineComponent({
 
     const prevFrame = computed(() =>
       CaluculatorHelpers.getActiveRound(
-        players.value,
         frameIndex.value - 1,
         activePlayerIndex.value
       )
     );
-
-    const setActiveIndex = (roundId: number, index: number) => {
-      activePlayerIndex.value = index;
-      frameIndex.value =
-        CaluculatorHelpers.getSelectFrame(
-          players.value,
-          activePlayerIndex.value
-        ) || roundId;
-    };
 
     const nextRound = () => {
       standingPins.value = [...Array(11).keys()];
@@ -132,7 +74,7 @@ export default defineComponent({
       }
     };
 
-    const handleFirstScore = () => {
+    const handleFirstRoll = () => {
       if (currentFrame.value) {
         if (prevFrame.value?.spare) {
           calcSpare();
@@ -148,7 +90,7 @@ export default defineComponent({
       }
     };
 
-    const handleSecondScore = () => {
+    const handleSecondRoll = () => {
       if (currentFrame.value) {
         currentFrame.value.secondScore = points.value;
         currentFrame.value.roundScore =
@@ -159,7 +101,6 @@ export default defineComponent({
         } else {
           if (prevFrame.value?.strike) {
             numberOfStrikes.value = CaluculatorHelpers.getCheckNumberStrikes(
-              players.value,
               activePlayerIndex.value,
               numberOfStrikes.value
             );
@@ -177,17 +118,16 @@ export default defineComponent({
         return;
       }
       if (currentFrame.value?.firstScore === null) {
-        handleFirstScore();
+        handleFirstRoll();
         return;
       }
       if (currentFrame.value?.secondScore === null) {
-        handleSecondScore();
+        handleSecondRoll();
       }
     };
 
     const calcSpare = () => {
       const secondPrevFrame = CaluculatorHelpers.getActiveRound(
-        players.value,
         frameIndex.value - 2,
         activePlayerIndex.value
       );
@@ -209,7 +149,6 @@ export default defineComponent({
 
     const calcDouble = async () => {
       const doubleRound = CaluculatorHelpers.getActiveRound(
-        players.value,
         frameIndex.value - 2,
         activePlayerIndex.value
       );
@@ -221,7 +160,6 @@ export default defineComponent({
 
     const calcTurkey = () => {
       const turkeyRound = CaluculatorHelpers.getActiveRound(
-        players.value,
         frameIndex.value - 3,
         activePlayerIndex.value
       );
@@ -231,7 +169,6 @@ export default defineComponent({
 
     const calcFourBagger = () => {
       const fourBaggerRound = CaluculatorHelpers.getActiveRound(
-        players.value,
         frameIndex.value - 4,
         activePlayerIndex.value
       );
@@ -241,18 +178,18 @@ export default defineComponent({
 
     const handleTenthFrame = async () => {
       if (currentFrame.value?.firstScore === null) {
-        handleTenthFrameFirstScore();
+        handleTenthFrameFirstRoll();
       } else if (currentFrame.value?.secondScore === null) {
-        handleTenthFrameSecondScore();
+        handleTenthFrameSecondRoll();
       } else if (
         currentFrame.value?.roundScore === 10 &&
         currentFrame.value.thirdScore === null
       ) {
-        handleTenthFrameThirdScore();
+        handleTenthFrameThirdRoll();
       }
     };
 
-    const handleTenthFrameFirstScore = () => {
+    const handleTenthFrameFirstRoll = () => {
       if (currentFrame.value && prevFrame.value) {
         currentFrame.value.firstScore = points.value;
         if (prevFrame.value.spare) calcSpare();
@@ -265,7 +202,7 @@ export default defineComponent({
       }
     };
 
-    const handleTenthFrameSecondScore = async () => {
+    const handleTenthFrameSecondRoll = async () => {
       if (currentFrame.value?.firstScore) {
         currentFrame.value.secondScore = points.value;
         currentFrame.value.roundScore =
@@ -287,7 +224,6 @@ export default defineComponent({
     const checkTenthFrameStrike = () => {
       if (prevFrame.value?.strike) {
         numberOfStrikes.value = CaluculatorHelpers.getCheckNumberStrikes(
-          players.value,
           activePlayerIndex.value,
           numberOfStrikes.value
         );
@@ -297,7 +233,7 @@ export default defineComponent({
       }
     };
 
-    const handleTenthFrameThirdScore = () => {
+    const handleTenthFrameThirdRoll = () => {
       if (currentFrame.value) {
         currentFrame.value.thirdScore = points.value;
         currentFrame.value.roundScore += points.value;
@@ -311,7 +247,6 @@ export default defineComponent({
     const calcTotalScore = () => {
       let sumTotal = 0;
       const playerGame = CaluculatorHelpers.getPlayerGame(
-        players.value,
         activePlayerIndex.value
       );
       playerGame?.forEach((frame) => {
@@ -325,7 +260,6 @@ export default defineComponent({
 
     const calcHdcp = () => {
       const player = CaluculatorHelpers.getActivePlayer(
-        players.value,
         activePlayerIndex.value
       );
       if (!player?.hdcpFactor) return;
@@ -342,7 +276,6 @@ export default defineComponent({
 
     return {
       players,
-      setActiveIndex,
       frameIndex,
       activePlayerIndex,
     };
@@ -367,65 +300,5 @@ export default defineComponent({
   max-width: 60rem;
   box-shadow: 5px 5px 15px#13202d;
   background: rgb(159, 139, 61);
-}
-.score-box {
-  display: flex;
-  flex-flow: column nowrap;
-  justify-content: center;
-  max-height: 80px;
-  width: 100%;
-  background: white;
-}
-
-.player-details-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.25rem;
-}
-.frame-total {
-  height: 50%;
-  background: rgb(224, 224, 224);
-}
-
-tr {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-
-th {
-  flex: 1;
-  padding: 10px;
-}
-
-td {
-  height: 80px;
-  border: 1px solid #13202d;
-  flex: 1;
-}
-
-.active {
-  border: 4px solid #8f3a0f;
-  border-radius: 5px;
-}
-
-.frame-scores {
-  display: flex;
-  height: 50%;
-  background: rgb(168, 168, 168);
-}
-
-.score {
-  flex: 1;
-}
-
-.first {
-  background: white;
-}
-
-.third {
-  background: rgb(112, 112, 112);
-  max-width: 33%;
 }
 </style>
