@@ -8,9 +8,9 @@ export default class CalucalorHelpers {
     for (let id = 1; id <= 10; id++) {
       rounds.push({
         active: false,
-        firstScore: null,
-        secondScore: null,
-        thirdScore: null,
+        firstRoll: null,
+        secondRoll: null,
+        thirdRoll: null,
         roundScore: 0,
         totalScore: null,
         id: id,

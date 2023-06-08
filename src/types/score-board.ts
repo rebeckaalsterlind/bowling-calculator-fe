@@ -1,8 +1,8 @@
 export interface Rounds {
   active: boolean;
-  firstScore: number | null;
-  secondScore: number | null;
-  thirdScore: number | null;
+  firstRoll: number | null;
+  secondRoll: number | null;
+  thirdRoll: number | null;
   roundScore: number;
   totalScore: number | null;
   id: number;

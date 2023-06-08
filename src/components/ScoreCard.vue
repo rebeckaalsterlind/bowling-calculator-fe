@@ -85,30 +85,40 @@ export default defineComponent({
           currentFrame.value.played = true;
           nextRound();
         } else {
-          currentFrame.value.firstScore = points.value;
+          currentFrame.value.firstRoll = points.value;
         }
       }
     };
 
     const handleSecondRoll = () => {
       if (currentFrame.value) {
-        currentFrame.value.secondScore = points.value;
-        currentFrame.value.roundScore =
-          points.value + (currentFrame.value.firstScore || 0);
-        currentFrame.value.played = true;
+        setSecondRollScore();
+
         if (currentFrame.value.roundScore === 10) {
           currentFrame.value.spare = true;
-        } else {
-          if (prevFrame.value?.strike) {
-            numberOfStrikes.value = CaluculatorHelpers.getCheckNumberStrikes(
-              activePlayerIndex.value,
-              numberOfStrikes.value
-            );
-            setStrikeScoring();
-          }
-          calcTotalScore();
+          nextRound();
+          return;
         }
+
+        if (prevFrame.value?.strike) {
+          numberOfStrikes.value = CaluculatorHelpers.getCheckNumberStrikes(
+            activePlayerIndex.value,
+            numberOfStrikes.value
+          );
+          setStrikeScoring();
+        }
+
+        calcTotalScore();
         nextRound();
+      }
+    };
+
+    const setSecondRollScore = () => {
+      if (currentFrame.value) {
+        currentFrame.value.secondRoll = points.value;
+        currentFrame.value.roundScore =
+          points.value + (currentFrame.value.firstRoll || 0);
+        currentFrame.value.played = true;
       }
     };
 
@@ -117,11 +127,11 @@ export default defineComponent({
         handleTenthFrame();
         return;
       }
-      if (currentFrame.value?.firstScore === null) {
+      if (currentFrame.value?.firstRoll === null) {
         handleFirstRoll();
         return;
       }
-      if (currentFrame.value?.secondScore === null) {
+      if (currentFrame.value?.secondRoll === null) {
         handleSecondRoll();
       }
     };
@@ -177,23 +187,29 @@ export default defineComponent({
     };
 
     const handleTenthFrame = async () => {
-      if (currentFrame.value?.firstScore === null) {
+      const isAllPinsDown = currentFrame.value?.roundScore === 10;
+      const thirdRollEmpty = currentFrame.value?.thirdRoll === null;
+
+      if (currentFrame.value?.firstRoll === null) {
         handleTenthFrameFirstRoll();
-      } else if (currentFrame.value?.secondScore === null) {
+        return;
+      }
+      if (currentFrame.value?.secondRoll === null) {
         handleTenthFrameSecondRoll();
-      } else if (
-        currentFrame.value?.roundScore === 10 &&
-        currentFrame.value.thirdScore === null
-      ) {
+        return;
+      }
+      if (isAllPinsDown && thirdRollEmpty) {
         handleTenthFrameThirdRoll();
       }
     };
 
     const handleTenthFrameFirstRoll = () => {
       if (currentFrame.value && prevFrame.value) {
-        currentFrame.value.firstScore = points.value;
-        if (prevFrame.value.spare) calcSpare();
-        if (prevFrame.value.spare) calcTotalScore();
+        currentFrame.value.firstRoll = points.value;
+        if (prevFrame.value.spare) {
+          calcSpare();
+          calcTotalScore();
+        }
         if (points.value === 10) {
           currentFrame.value.tenthFrameFirstStrike = true;
           standingPins.value = [...Array(11).keys()];
@@ -203,18 +219,13 @@ export default defineComponent({
     };
 
     const handleTenthFrameSecondRoll = async () => {
-      if (currentFrame.value?.firstScore) {
-        currentFrame.value.secondScore = points.value;
-        currentFrame.value.roundScore =
-          currentFrame.value.firstScore + points.value;
-        currentFrame.value.played = true;
-      }
+      setSecondRollScore();
       checkTenthFrameSpare();
       checkTenthFrameStrike();
     };
 
     const checkTenthFrameSpare = () => {
-      if (currentFrame.value?.secondScore === 10)
+      if (currentFrame.value?.secondRoll === 10)
         currentFrame.value.tenthFrameSecondStrike = true;
       else if (currentFrame.value?.roundScore === 10)
         currentFrame.value.spare = true;
@@ -235,9 +246,9 @@ export default defineComponent({
 
     const handleTenthFrameThirdRoll = () => {
       if (currentFrame.value) {
-        currentFrame.value.thirdScore = points.value;
+        currentFrame.value.thirdRoll = points.value;
         currentFrame.value.roundScore += points.value;
-        if (currentFrame.value.thirdScore === 10)
+        if (currentFrame.value.thirdRoll === 10)
           currentFrame.value.tenthFrameThirdStrike = true;
         currentFrame.value.played = true;
         calcTotalScore();

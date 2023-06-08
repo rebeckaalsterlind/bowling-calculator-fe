@@ -1,21 +1,21 @@
 <template>
   <div class="frame-scores">
     <div class="first score">
-      {{ frame.strike ? "X" : frame.firstScore === 0 ? "-" : frame.firstScore }}
+      {{ frame.strike ? "X" : frame.firstRoll === 0 ? "-" : frame.firstRoll }}
     </div>
     <div class="second score">
       {{
         (frame.spare && "/") ||
-        (frame.secondScore === 0 && "-") ||
+        (frame.secondRoll === 0 && "-") ||
         (frame.tenthFrameSecondStrike && "X") ||
-        frame.secondScore
+        frame.secondRoll
       }}
     </div>
     <div v-if="frame.id === 10" class="third score">
       {{
         (frame.tenthFrameThirdStrike && "X") ||
-        frame.thirdScore ||
-        (frame.thirdScore === 0 && "-") ||
+        frame.thirdRoll ||
+        (frame.thirdRoll === 0 && "-") ||
         ""
       }}
     </div>
