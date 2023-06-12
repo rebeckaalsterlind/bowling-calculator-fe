@@ -5,6 +5,7 @@
       <ScoreCardContent
         @activePlayerIndex="activePlayerIndex = $event"
         @frameIndex="frameIndex = $event"
+        :activePlayerIndex="activePlayerIndex"
       />
     </table>
   </div>
@@ -32,21 +33,21 @@ export default defineComponent({
     const frameIndex = ref(1);
     const activePlayerIndex = ref(1);
     const currentFrame = computed(() =>
-      CaluculatorHelpers.getActiveRound(
+      CaluculatorHelpers.getSelectedFrame(
         frameIndex.value,
         activePlayerIndex.value
       )
     );
 
     const prevFrame = computed(() =>
-      CaluculatorHelpers.getActiveRound(
+      CaluculatorHelpers.getSelectedFrame(
         frameIndex.value - 1,
         activePlayerIndex.value
       )
     );
 
     const nextRound = () => {
-      standingPins.value = [...Array(11).keys()];
+      scoreStore.$resetPins();
       frameIndex.value++;
     };
 
@@ -75,18 +76,17 @@ export default defineComponent({
     };
 
     const handleFirstRoll = () => {
-      if (currentFrame.value) {
-        if (prevFrame.value?.spare) {
-          calcSpare();
-          calcTotalScore();
-        }
-        if (points.value === 10) {
-          currentFrame.value.strike = true;
-          currentFrame.value.played = true;
-          nextRound();
-        } else {
-          currentFrame.value.firstRoll = points.value;
-        }
+      if (!currentFrame.value) return;
+      if (prevFrame.value?.spare) {
+        calcSpare();
+        calcTotalScore();
+      }
+      if (points.value === 10) {
+        currentFrame.value.strike = true;
+        currentFrame.value.played = true;
+        nextRound();
+      } else {
+        currentFrame.value.firstRoll = points.value;
       }
     };
 
@@ -123,6 +123,7 @@ export default defineComponent({
     };
 
     const setRoundScore = async () => {
+      CaluculatorHelpers.getSelectFrame(activePlayerIndex.value);
       if (currentFrame.value?.id === 10) {
         handleTenthFrame();
         return;
@@ -137,7 +138,7 @@ export default defineComponent({
     };
 
     const calcSpare = () => {
-      const secondPrevFrame = CaluculatorHelpers.getActiveRound(
+      const secondPrevFrame = CaluculatorHelpers.getSelectedFrame(
         frameIndex.value - 2,
         activePlayerIndex.value
       );
@@ -158,7 +159,7 @@ export default defineComponent({
     };
 
     const calcDouble = async () => {
-      const doubleRound = CaluculatorHelpers.getActiveRound(
+      const doubleRound = CaluculatorHelpers.getSelectedFrame(
         frameIndex.value - 2,
         activePlayerIndex.value
       );
@@ -169,7 +170,7 @@ export default defineComponent({
     };
 
     const calcTurkey = () => {
-      const turkeyRound = CaluculatorHelpers.getActiveRound(
+      const turkeyRound = CaluculatorHelpers.getSelectedFrame(
         frameIndex.value - 3,
         activePlayerIndex.value
       );
@@ -178,7 +179,7 @@ export default defineComponent({
     };
 
     const calcFourBagger = () => {
-      const fourBaggerRound = CaluculatorHelpers.getActiveRound(
+      const fourBaggerRound = CaluculatorHelpers.getSelectedFrame(
         frameIndex.value - 4,
         activePlayerIndex.value
       );

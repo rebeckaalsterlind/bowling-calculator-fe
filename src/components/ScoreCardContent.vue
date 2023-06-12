@@ -1,5 +1,11 @@
 <template>
-  <tr v-for="(player, index) in players" :key="player.id">
+  <tr
+    v-for="(player, index) in players"
+    :key="player.id"
+    :class="{
+      'active-player': activePlayerIndex === player.id,
+    }"
+  >
     <td class="player-details-container">
       <h5>{{ player.name || `Player ${index + 1}` }}</h5>
       <h6>HDch: {{ player.hdcpFactor || "-" }}</h6>
@@ -9,7 +15,7 @@
       :key="frame.id"
       class="score-box"
       :class="{
-        active: !!frame.active,
+        'active-frame': !!frame.active,
       }"
       @click="handleActiveIndex(frame.id, player.id)"
     >
@@ -20,30 +26,46 @@
   </tr>
 </template>
 <script lang="ts">
-import { defineComponent, toRef } from "vue";
+import { defineComponent, onMounted, toRef } from "vue";
 import { usePlayersStore } from "@/store/players";
 import CaluculatorHelpers from "../helpers/calculator-helper";
 import ScoreFrame from "./ScoreFrame.vue";
 
 export default defineComponent({
   components: { ScoreFrame },
-  setup(_, { emit }) {
+  props: { activePlayerIndex: { type: Number, requried: true } },
+  setup(props, { emit }) {
     const playersStore = usePlayersStore();
     const players = toRef(playersStore, "players");
 
     const handleActiveIndex = (roundId: number, index: number) => {
       const frameIndex = CaluculatorHelpers.getSelectFrame(index) || roundId;
-
       emit("activePlayerIndex", index);
       emit("frameIndex", frameIndex);
     };
+
+    onMounted(() =>
+      CaluculatorHelpers.getSelectFrame(props.activePlayerIndex || 0)
+    );
 
     return { players, handleActiveIndex };
   },
 });
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+.active-player {
+  box-shadow: 2px 0 5px#13202d;
+  .active-frame {
+    border: 2px solid #8f3a0f;
+  }
+}
+.player-details-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+}
 .score-box {
   display: flex;
   flex-flow: column nowrap;
@@ -51,13 +73,6 @@ export default defineComponent({
   max-height: 80px;
   width: 100%;
   background: white;
-}
-
-.player-details-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 0.25rem;
 }
 
 tr {
@@ -75,9 +90,5 @@ td {
   height: 80px;
   border: 1px solid #13202d;
   flex: 1;
-}
-.active {
-  border: 4px solid #8f3a0f;
-  border-radius: 5px;
 }
 </style>

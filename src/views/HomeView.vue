@@ -22,9 +22,8 @@ export default defineComponent({
   },
   setup() {
     const componentKey = ref(0);
-    const handleComponentKey = (num: number) => {
-      componentKey.value = num;
-    };
+    const handleComponentKey = (num: number) => (componentKey.value = num);
+
     return {
       handleComponentKey,
       componentKey,

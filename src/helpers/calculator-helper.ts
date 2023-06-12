@@ -52,13 +52,11 @@ export default class CalucalorHelpers {
     return players.value.find((player) => player.id === activePlayerIndex);
   }
 
-  static getActiveRound(activeRoundId: number, activePlayer: number) {
+  static getSelectedFrame(roundId: number, playerId: number) {
     const playersStore = usePlayersStore();
     const players = toRef(playersStore, "players");
-    const selectPlayer = players.value.find(
-      (player) => player.id === activePlayer
-    );
-    return selectPlayer?.game.find((round) => round.id === activeRoundId);
+    const selectPlayer = players.value.find((player) => player.id === playerId);
+    return selectPlayer?.game.find((round) => round.id === roundId);
   }
 
   static getPlayerGame(activePlayerIndex: number) {
@@ -92,13 +90,11 @@ export default class CalucalorHelpers {
 
   static getSelectFrame(activePlayerIndex: number) {
     const activePlayer = CalucalorHelpers.getActivePlayer(activePlayerIndex);
-
-    if (activePlayer) {
-      const unplayedFrame = activePlayer.game.find((frame) => !frame.played);
-      if (unplayedFrame) {
-        unplayedFrame.active = true;
-        return unplayedFrame.id;
-      }
-    }
+    const unplayedFrame = activePlayer?.game.find((frame) =>
+      frame.played ? (frame.active = false) : frame
+    );
+    if (!unplayedFrame) return;
+    unplayedFrame.active = true;
+    return unplayedFrame.id;
   }
 }
