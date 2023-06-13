@@ -27,12 +27,7 @@
 import { defineComponent } from "vue";
 
 export default defineComponent({
-  props: {
-    frame: { type: Object, required: true },
-  },
-  setup() {
-    return {};
-  },
+  props: { frame: { type: Object, required: true } },
 });
 </script>
 

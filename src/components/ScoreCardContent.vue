@@ -28,27 +28,27 @@
 <script lang="ts">
 import { defineComponent, onMounted, toRef } from "vue";
 import { usePlayersStore } from "@/store/players";
+import { useScoreStore } from "@/store/scores";
+
 import CaluculatorHelpers from "../helpers/calculator-helper";
 import ScoreFrame from "./ScoreFrame.vue";
 
 export default defineComponent({
   components: { ScoreFrame },
-  props: { activePlayerIndex: { type: Number, requried: true } },
-  setup(props, { emit }) {
+  setup() {
     const playersStore = usePlayersStore();
+    const scoresStore = useScoreStore();
     const players = toRef(playersStore, "players");
+    const activePlayerIndex = toRef(playersStore, "activePlayerIndex");
+    const frameId = toRef(scoresStore, "frameId");
 
     const handleActiveIndex = (roundId: number, index: number) => {
-      const frameIndex = CaluculatorHelpers.getSelectFrame(index) || roundId;
-      emit("activePlayerIndex", index);
-      emit("frameIndex", frameIndex);
+      activePlayerIndex.value = index;
+      frameId.value = CaluculatorHelpers.getFirstUnplayedFrame() || roundId;
     };
 
-    onMounted(() =>
-      CaluculatorHelpers.getSelectFrame(props.activePlayerIndex || 0)
-    );
-
-    return { players, handleActiveIndex };
+    onMounted(() => CaluculatorHelpers.getFirstUnplayedFrame());
+    return { players, handleActiveIndex, activePlayerIndex };
   },
 });
 </script>
